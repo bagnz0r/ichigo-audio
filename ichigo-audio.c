@@ -9,6 +9,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <wchar.h>
+#include <stdbool.h>
 #include <bass.h>
 
 #ifndef OSX
@@ -22,8 +23,8 @@
 int current_device = 0;
 int current_stream = -1;
 
-int end_of_stream = 1;
-int paused = 1;
+bool end_of_stream = true;
+bool paused = true;
 
 void sync_end(HSYNC handle, DWORD channel, DWORD data, void *user)
 {
@@ -32,8 +33,8 @@ void sync_end(HSYNC handle, DWORD channel, DWORD data, void *user)
 
 	current_stream = -1;
 
-	end_of_stream = 1;
-	paused = 1;
+	end_of_stream = true;
+	paused = true;
 }
 
 char * get_filename_ext(char * file_name) {
@@ -44,15 +45,14 @@ char * get_filename_ext(char * file_name) {
     return dot + 1;
 }
 
-int ig_initialize(int device, int freq)
+bool ig_initialize(int device, int freq)
 {
 	if (BASS_Init(device, freq, BASS_DEVICE_FREQ, 0, NULL))
 	{
 		current_device = device;
-		return 1;
-	}
+		return true;
 
-	return 0;
+	return false;
 }
 
 void ig_create_stream(wchar_t * file_name)
@@ -101,8 +101,8 @@ void ig_play()
 	BASS_ChannelPlay(current_stream, 0);
 	BASS_ChannelSetSync(current_stream, BASS_SYNC_END, 0, &sync_end, 0);
 
-	end_of_stream = 0;
-	paused = 0;
+	end_of_stream = false;
+	paused = false;
 }
 
 void ig_pause()
@@ -112,7 +112,7 @@ void ig_pause()
 
 	BASS_ChannelPause(current_stream);
 
-	paused = 1;
+	paused = true;
 }
 
 void ig_stop()
@@ -124,8 +124,8 @@ void ig_stop()
 	BASS_StreamFree(current_stream);
 	current_stream = -1;
 
-	end_of_stream = 1;
-	paused = 1;
+	end_of_stream = true;
+	paused = true;
 }
 
 double ig_get_pos()
@@ -162,15 +162,15 @@ void ig_set_volume(float volume)
 	BASS_SetVolume(volume);
 }
 
-int ig_is_stream_active()
+bool ig_is_stream_active()
 {
 	return !end_of_stream;
 }
 
-int ig_is_paused()
+bool ig_is_paused()
 {
 	if (current_stream == -1)
-		return 0;
+		return false;
 
 	return paused;
 }
