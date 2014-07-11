@@ -26,7 +26,7 @@ int current_stream = -1;
 bool end_of_stream = true;
 bool paused = true;
 
-void sync_end(HSYNC handle, DWORD channel, DWORD data, void *user)
+void __stdcall sync_end(HSYNC handle, DWORD channel, DWORD data, void *user)
 {
 	BASS_ChannelStop(current_stream);
 	BASS_StreamFree(current_stream);
@@ -51,6 +51,7 @@ bool ig_initialize(int device, int freq)
 	{
 		current_device = device;
 		return true;
+	}
 
 	return false;
 }
