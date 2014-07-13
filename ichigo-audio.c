@@ -5,21 +5,16 @@
 // This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
+#define _WIN32 1
+
 #include <stdio.h>
-#include <string.h>
-#include <ctype.h>
 #include <wchar.h>
 #include <stdbool.h>
 #include <bass.h>
-
-#ifndef OSX
-#include <bass_aac.h>
-#include <bass_alac.h>
-#endif
-
 #include <bass_fx.h>
-#include <bassflac.h>
+#include <tags.h>
 
+int fx = 0;
 int current_device = 0;
 int current_stream = -1;
 
@@ -37,26 +32,54 @@ void __stdcall sync_end(HSYNC handle, DWORD channel, DWORD data, void *user)
 	paused = true;
 }
 
-char * get_filename_ext(char * file_name) {
-	char * lwr = tolower(file_name);
-    char * dot = strrchr(lwr, '.');
-    if (!dot || strcmp(dot, lwr))
-    	return "";
-    return dot + 1;
-}
-
-bool ig_initialize(int device, int freq)
+//
+// Initialize the Ichigo Audio library
+//
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+bool __cdecl ig_initialize(int device, int freq)
 {
-	if (BASS_Init(device, freq, BASS_DEVICE_FREQ, 0, NULL))
+	if (!BASS_Init(device, freq, BASS_DEVICE_FREQ, 0, NULL))
 	{
-		current_device = device;
-		return true;
+		return false;
 	}
 
-	return false;
+	current_device = device;
+
+	// load all the plugins here
+#ifdef _WIN32
+	BASS_PluginLoad("bass_aac.dll", 0);
+	BASS_PluginLoad("bass_alac.dll", 0);
+	BASS_PluginLoad("bass_fx.dll", 0);
+	BASS_PluginLoad("bassflac.dll", 0);
+	BASS_PluginLoad("basswv.dll", 0);
+	BASS_PluginLoad("bass_mpc.dll", 0);
+	BASS_PluginLoad("bass_ape.dll", 0);
+#elif defined(__linux__)
+	BASS_PluginLoad("libbass_fx.so", 0);
+	BASS_PluginLoad("libbassflac.so", 0);
+	BASS_PluginLoad("libbasswv.so", 0);
+	BASS_PluginLoad("libbass_mpc.so", 0);
+	BASS_PluginLoad("libbass_ape.so", 0);
+#else
+	BASS_PluginLoad("libbass_fx.dylib", 0);
+	BASS_PluginLoad("libbassflac.dylib", 0);
+	BASS_PluginLoad("libbasswv.dylib", 0);
+	BASS_PluginLoad("libbass_mpc.dylib", 0);
+	BASS_PluginLoad("libbass_ape.dylib", 0);
+#endif
+
+	return true;
 }
 
-void ig_create_stream(wchar_t * file_name)
+//
+// Create audio stream from file
+//
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+void __cdecl ig_create_stream(wchar_t * file_name)
 {
 	if (current_stream != -1)
 	{
@@ -66,35 +89,35 @@ void ig_create_stream(wchar_t * file_name)
 		current_stream = -1;
 	}
 
-	char * ext = get_filename_ext((char *)file_name);
-
-	#ifndef OSX
-	if (!strcmp(ext, "m4a") || !strcmp(ext, "aac"))
-	{
-		current_stream = BASS_AAC_StreamCreateFile(0, file_name, 0, 0, BASS_SAMPLE_FLOAT | BASS_UNICODE);
-		if (!current_stream)
-		{
-			current_stream = BASS_ALAC_StreamCreateFile(0, file_name, 0, 0, BASS_SAMPLE_FLOAT | BASS_UNICODE);
-			if (!current_stream)
-			{
-				current_stream = BASS_MP4_StreamCreateFile(0, file_name, 0, 0, BASS_SAMPLE_FLOAT | BASS_UNICODE);
-			}
-		}
-	}
-	else
-	#endif
-		
-	if (!strcmp(ext, "flac"))
-	{
-		current_stream = BASS_FLAC_StreamCreateFile(0, file_name, 0, 0, BASS_SAMPLE_FLOAT | BASS_UNICODE);
-	}
-	else
-	{
-		current_stream = BASS_StreamCreateFile(0, file_name, 0, 0, BASS_SAMPLE_FLOAT | BASS_UNICODE);
-	}
+	current_stream = BASS_StreamCreateFile(false, file_name, 0, 0, BASS_SAMPLE_FLOAT | BASS_UNICODE | BASS_STREAM_AUTOFREE);
 }
 
-void ig_play()
+//
+// Create audio stream from URL
+//
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+void __cdecl ig_create_stream_from_url(char * url)
+{
+	if (current_stream != -1)
+	{
+		BASS_ChannelStop(current_stream);
+		BASS_StreamFree(current_stream);
+
+		current_stream = -1;
+	}
+
+	current_stream = BASS_StreamCreateURL(url, 0, BASS_SAMPLE_FLOAT | BASS_STREAM_RESTRATE | BASS_STREAM_AUTOFREE, NULL, NULL);
+}
+
+//
+// Play the current stream
+//
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+void __cdecl ig_play()
 {
 	if (current_stream == -1)
 		return;
@@ -106,7 +129,13 @@ void ig_play()
 	paused = false;
 }
 
-void ig_pause()
+//
+// Pause the current stream
+//
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+void __cdecl ig_pause()
 {
 	if (current_stream == -1)
 		return;
@@ -116,7 +145,13 @@ void ig_pause()
 	paused = true;
 }
 
-void ig_stop()
+//
+// Stop the current stream
+//
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+void __cdecl ig_stop()
 {
 	if (current_stream == -1)
 		return;
@@ -129,7 +164,13 @@ void ig_stop()
 	paused = true;
 }
 
-double ig_get_pos()
+//
+// Get current track position
+//
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+double __cdecl ig_get_pos()
 {
 	if (current_stream == -1)
 		return -1;
@@ -137,7 +178,13 @@ double ig_get_pos()
 	return BASS_ChannelBytes2Seconds(current_stream, BASS_ChannelGetPosition(current_stream, BASS_POS_BYTE));
 }
 
-double ig_get_len()
+//
+// Get track length
+//
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+double __cdecl ig_get_len()
 {
 	if (current_stream == -1)
 		return -1;
@@ -145,7 +192,13 @@ double ig_get_len()
 	return BASS_ChannelBytes2Seconds(current_stream, BASS_ChannelGetLength(current_stream, BASS_POS_BYTE));
 }
 
-void ig_set_pos(double position)
+//
+// Set track position
+//
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+void __cdecl ig_set_pos(double position)
 {
 	if (current_stream == -1)
 		return;
@@ -153,25 +206,147 @@ void ig_set_pos(double position)
 	BASS_ChannelSetPosition(current_stream, BASS_ChannelSeconds2Bytes(current_stream, position), BASS_POS_BYTE);
 }
 
-float ig_get_volume()
+//
+// Get current volume
+//
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+float __cdecl ig_get_volume()
 {
 	return BASS_GetVolume();
 }
 
-void ig_set_volume(float volume)
+//
+// Set volume
+//
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+void __cdecl ig_set_volume(float volume)
 {
 	BASS_SetVolume(volume);
 }
 
-bool ig_is_stream_active()
+//
+// Determines whether or not stream is active/has ended
+//
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+bool __cdecl ig_is_stream_active()
 {
 	return !end_of_stream;
 }
 
-bool ig_is_paused()
+//
+// Determines whether or not stream has paused
+//
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+bool __cdecl ig_is_paused()
 {
 	if (current_stream == -1)
 		return false;
 
 	return paused;
+}
+
+//
+// Reads tags on a current stream using the expression provided in tag_format
+// Encapsulate your expression in %UTF8(expression_here) in order to get UTF8 encoded output
+//
+// For more information on expression format, please see tags-readme.txt in dependencies/{OS}/tags
+//
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+char * ig_read_tag_from_current_stream(char * tag_format)
+{
+	return TAGS_Read(current_stream, tag_format);
+}
+
+//
+// Creates a dummy stream and reads tags using the expression provided in tag_format
+// Encapsulate your expression in %UTF8(expression_here) in order to get UTF8 encoded output
+//
+// For more information on expression format, please see tags-readme.txt in dependencies/{OS}/tags
+//
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+char * ig_read_tag_from_file(wchar_t * file_name, char * tag_format)
+{
+	int stream = BASS_StreamCreateFile(false, file_name, 0, 0, BASS_STREAM_DECODE);
+	char * tag = TAGS_Read(stream, tag_format);
+
+	BASS_StreamFree(stream);
+
+	return tag;
+}
+
+//
+// Enables the equalizer
+//
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+void ig_enable_equalizer()
+{
+	fx = BASS_ChannelSetFX(current_stream, BASS_FX_BFX_PEAKEQ, 0);
+}
+
+//
+// Disables the equalizer
+//
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+void ig_disable_equalizer()
+{
+	BASS_FXReset(fx);
+}
+
+//
+// Sets gain value on the specified equalizer band
+//
+// band: 0..n
+// quality: 0..2
+// freq: 1...n
+// gain 0..n
+//
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+void ig_set_equalizer(int band, int quality, float freq, float gain)
+{
+	float bandwidth = 0;
+	float qf = 0;
+
+	switch (quality)
+	{
+		case 0:
+			bandwidth = 2.5;
+			qf = 0.25;
+			break;
+		case 1:
+			bandwidth = 5;
+			qf = 0.5;
+			break;
+		case 2:
+			bandwidth = 10;
+			qf = 1;
+			break;
+	}
+
+	BASS_BFX_PEAKEQ param;
+	param.fBandwidth = bandwidth;
+	param.fQ = qf;
+	param.fCenter = freq;
+	param.fGain = gain;
+	param.lBand = band;
+	param.lChannel BASS_BFX_CHANALL;
+
+	BASS_FXSetParameters(fx, &param);
 }
