@@ -229,7 +229,7 @@ void __cdecl ig_set_volume(float volume)
 }
 
 //
-// Determines whether or not stream is active/has ended
+// Determines whether the stream is active/has ended or not
 //
 #ifdef _WIN32
 __declspec(dllexport)
@@ -240,7 +240,7 @@ bool __cdecl ig_is_stream_active()
 }
 
 //
-// Determines whether or not stream has paused
+// Determines whether the stream has paused or not
 //
 #ifdef _WIN32
 __declspec(dllexport)
