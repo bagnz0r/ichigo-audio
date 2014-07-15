@@ -1,4 +1,6 @@
-copy ichigo-audio\Debug\* output
+copy ichigo-audio\Debug\*.dll output
+copy ichigo-audio\Debug\*.exp output
+copy ichigo-audio\Debug\*.pdb output
 copy dependencies\win32\bass\*.dll output
 copy dependencies\win32\bass_aac\*.dll output
 copy dependencies\win32\bass_alac\*.dll output

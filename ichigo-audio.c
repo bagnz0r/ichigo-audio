@@ -5,8 +5,6 @@
 // This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-#define _WIN32 1
-
 #include <stdio.h>
 #include <wchar.h>
 #include <stdbool.h>
@@ -38,7 +36,7 @@ void __stdcall sync_end(HSYNC handle, DWORD channel, DWORD data, void *user)
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-bool __cdecl ig_initialize(int device, int freq)
+bool ig_initialize(int device, int freq)
 {
 	if (!BASS_Init(device, freq, BASS_DEVICE_FREQ, 0, NULL))
 	{
@@ -79,7 +77,7 @@ bool __cdecl ig_initialize(int device, int freq)
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-void __cdecl ig_create_stream(wchar_t * file_name)
+int ig_create_stream(wchar_t * file_name)
 {
 	if (current_stream != -1)
 	{
@@ -89,7 +87,8 @@ void __cdecl ig_create_stream(wchar_t * file_name)
 		current_stream = -1;
 	}
 
-	current_stream = BASS_StreamCreateFile(false, file_name, 0, 0, BASS_SAMPLE_FLOAT | BASS_UNICODE | BASS_STREAM_AUTOFREE);
+	current_stream = BASS_StreamCreateFile(false, file_name, 0, 0, BASS_SAMPLE_FLOAT | BASS_UNICODE);
+	return current_stream;
 }
 
 //
@@ -98,7 +97,7 @@ void __cdecl ig_create_stream(wchar_t * file_name)
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-void __cdecl ig_create_stream_from_url(char * url)
+void ig_create_stream_from_url(char * url)
 {
 	if (current_stream != -1)
 	{
@@ -108,7 +107,7 @@ void __cdecl ig_create_stream_from_url(char * url)
 		current_stream = -1;
 	}
 
-	current_stream = BASS_StreamCreateURL(url, 0, BASS_SAMPLE_FLOAT | BASS_STREAM_RESTRATE | BASS_STREAM_AUTOFREE, NULL, NULL);
+	current_stream = BASS_StreamCreateURL(url, 0, BASS_SAMPLE_FLOAT | BASS_STREAM_RESTRATE, NULL, NULL);
 }
 
 //
@@ -117,7 +116,7 @@ void __cdecl ig_create_stream_from_url(char * url)
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-void __cdecl ig_play()
+void ig_play()
 {
 	if (current_stream == -1)
 		return;
@@ -135,7 +134,7 @@ void __cdecl ig_play()
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-void __cdecl ig_pause()
+void ig_pause()
 {
 	if (current_stream == -1)
 		return;
@@ -151,7 +150,7 @@ void __cdecl ig_pause()
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-void __cdecl ig_stop()
+void ig_stop()
 {
 	if (current_stream == -1)
 		return;
@@ -170,7 +169,7 @@ void __cdecl ig_stop()
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-double __cdecl ig_get_pos()
+double ig_get_pos()
 {
 	if (current_stream == -1)
 		return -1;
@@ -184,7 +183,7 @@ double __cdecl ig_get_pos()
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-double __cdecl ig_get_len()
+double ig_get_len()
 {
 	if (current_stream == -1)
 		return -1;
@@ -198,7 +197,7 @@ double __cdecl ig_get_len()
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-void __cdecl ig_set_pos(double position)
+void ig_set_pos(double position)
 {
 	if (current_stream == -1)
 		return;
@@ -212,7 +211,7 @@ void __cdecl ig_set_pos(double position)
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-float __cdecl ig_get_volume()
+float ig_get_volume()
 {
 	return BASS_GetVolume();
 }
@@ -223,7 +222,7 @@ float __cdecl ig_get_volume()
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-void __cdecl ig_set_volume(float volume)
+void ig_set_volume(float volume)
 {
 	BASS_SetVolume(volume);
 }
@@ -234,7 +233,7 @@ void __cdecl ig_set_volume(float volume)
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-bool __cdecl ig_is_stream_active()
+bool ig_is_stream_active()
 {
 	return !end_of_stream;
 }
@@ -245,7 +244,7 @@ bool __cdecl ig_is_stream_active()
 #ifdef _WIN32
 __declspec(dllexport)
 #endif
-bool __cdecl ig_is_paused()
+bool ig_is_paused()
 {
 	if (current_stream == -1)
 		return false;
@@ -278,7 +277,7 @@ __declspec(dllexport)
 #endif
 char * ig_read_tag_from_file(wchar_t * file_name, char * tag_format)
 {
-	int stream = BASS_StreamCreateFile(false, file_name, 0, 0, BASS_STREAM_DECODE);
+	int stream = BASS_StreamCreateFile(false, file_name, 0, 0, BASS_SAMPLE_FLOAT | BASS_UNICODE);
 	char * tag = TAGS_Read(stream, tag_format);
 
 	BASS_StreamFree(stream);
