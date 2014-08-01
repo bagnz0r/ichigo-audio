@@ -19,7 +19,7 @@ int current_stream = -1;
 bool end_of_stream = true;
 bool paused = true;
 
-void __stdcall sync_end(HSYNC handle, DWORD channel, DWORD data, void *user)
+void sync_end(HSYNC handle, DWORD channel, DWORD data, void *user)
 {
 	BASS_ChannelStop(current_stream);
 	BASS_StreamFree(current_stream);
@@ -35,6 +35,8 @@ void __stdcall sync_end(HSYNC handle, DWORD channel, DWORD data, void *user)
 //
 #ifdef _WIN32
 __declspec(dllexport)
+#else
+__attribute__((visibility("default")))
 #endif
 bool ig_initialize(int device, int freq)
 {
@@ -76,8 +78,11 @@ bool ig_initialize(int device, int freq)
 //
 #ifdef _WIN32
 __declspec(dllexport)
-#endif
 int ig_create_stream(wchar_t * file_name)
+#else
+__attribute__((visibility("default")))
+int ig_create_stream(char * file_name)
+#endif
 {
 	if (current_stream != -1)
 	{
@@ -87,8 +92,12 @@ int ig_create_stream(wchar_t * file_name)
 		current_stream = -1;
 	}
 
+#ifdef _WIN32
 	current_stream = BASS_StreamCreateFile(false, file_name, 0, 0, BASS_SAMPLE_FLOAT | BASS_UNICODE);
-	return current_stream;
+#else
+    current_stream = BASS_StreamCreateFile(false, file_name, 0, 0, BASS_SAMPLE_FLOAT);
+#endif
+	return BASS_ErrorGetCode();
 }
 
 //
@@ -96,6 +105,8 @@ int ig_create_stream(wchar_t * file_name)
 //
 #ifdef _WIN32
 __declspec(dllexport)
+#else
+__attribute__((visibility("default")))
 #endif
 void ig_create_stream_from_url(char * url)
 {
@@ -115,6 +126,8 @@ void ig_create_stream_from_url(char * url)
 //
 #ifdef _WIN32
 __declspec(dllexport)
+#else
+__attribute__((visibility("default")))
 #endif
 void ig_play()
 {
@@ -133,6 +146,8 @@ void ig_play()
 //
 #ifdef _WIN32
 __declspec(dllexport)
+#else
+__attribute__((visibility("default")))
 #endif
 void ig_pause()
 {
@@ -149,6 +164,8 @@ void ig_pause()
 //
 #ifdef _WIN32
 __declspec(dllexport)
+#else
+__attribute__((visibility("default")))
 #endif
 void ig_stop()
 {
@@ -168,6 +185,8 @@ void ig_stop()
 //
 #ifdef _WIN32
 __declspec(dllexport)
+#else
+__attribute__((visibility("default")))
 #endif
 double ig_get_pos()
 {
@@ -182,6 +201,8 @@ double ig_get_pos()
 //
 #ifdef _WIN32
 __declspec(dllexport)
+#else
+__attribute__((visibility("default")))
 #endif
 double ig_get_len()
 {
@@ -196,6 +217,8 @@ double ig_get_len()
 //
 #ifdef _WIN32
 __declspec(dllexport)
+#else
+__attribute__((visibility("default")))
 #endif
 void ig_set_pos(double position)
 {
@@ -210,6 +233,8 @@ void ig_set_pos(double position)
 //
 #ifdef _WIN32
 __declspec(dllexport)
+#else
+__attribute__((visibility("default")))
 #endif
 float ig_get_volume()
 {
@@ -232,6 +257,8 @@ void ig_set_volume(float volume)
 //
 #ifdef _WIN32
 __declspec(dllexport)
+#else
+__attribute__((visibility("default")))
 #endif
 bool ig_is_stream_active()
 {
@@ -243,6 +270,8 @@ bool ig_is_stream_active()
 //
 #ifdef _WIN32
 __declspec(dllexport)
+#else
+__attribute__((visibility("default")))
 #endif
 bool ig_is_paused()
 {
@@ -260,6 +289,8 @@ bool ig_is_paused()
 //
 #ifdef _WIN32
 __declspec(dllexport)
+#else
+__attribute__((visibility("default")))
 #endif
 char * ig_read_tag_from_current_stream(char * tag_format)
 {
@@ -274,10 +305,17 @@ char * ig_read_tag_from_current_stream(char * tag_format)
 //
 #ifdef _WIN32
 __declspec(dllexport)
-#endif
 char * ig_read_tag_from_file(wchar_t * file_name, char * tag_format)
+#else
+__attribute__((visibility("default")))
+char * ig_read_tag_from_file(char * file_name, char * tag_format)
+#endif
 {
+#ifdef _WIN32
 	int stream = BASS_StreamCreateFile(false, file_name, 0, 0, BASS_SAMPLE_FLOAT | BASS_UNICODE);
+#else
+	int stream = BASS_StreamCreateFile(false, file_name, 0, 0, BASS_SAMPLE_FLOAT);
+#endif
 	char * tag = TAGS_Read(stream, tag_format);
 
 	BASS_StreamFree(stream);
@@ -290,6 +328,8 @@ char * ig_read_tag_from_file(wchar_t * file_name, char * tag_format)
 //
 #ifdef _WIN32
 __declspec(dllexport)
+#else
+__attribute__((visibility("default")))
 #endif
 void ig_enable_equalizer()
 {
@@ -301,6 +341,8 @@ void ig_enable_equalizer()
 //
 #ifdef _WIN32
 __declspec(dllexport)
+#else
+__attribute__((visibility("default")))
 #endif
 void ig_disable_equalizer()
 {
@@ -317,6 +359,8 @@ void ig_disable_equalizer()
 //
 #ifdef _WIN32
 __declspec(dllexport)
+#else
+__attribute__((visibility("default")))
 #endif
 void ig_set_equalizer(int band, int quality, float freq, float gain)
 {
@@ -345,7 +389,7 @@ void ig_set_equalizer(int band, int quality, float freq, float gain)
 	param.fCenter = freq;
 	param.fGain = gain;
 	param.lBand = band;
-	param.lChannel BASS_BFX_CHANALL;
+	param.lChannel = BASS_BFX_CHANALL;
 
 	BASS_FXSetParameters(fx, &param);
 }
