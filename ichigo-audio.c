@@ -18,7 +18,7 @@
 #define PF __attribute__((visibility("default")))
 #endif
 
-int fx = 0;
+bool fx = false;
 int current_device = 0;
 int current_stream = -1;
 
@@ -280,7 +280,7 @@ PF char * ig_read_tag_from_file(char * file_name, char * tag_format)
 //
 PF void ig_enable_equalizer()
 {
-	fx = BASS_ChannelSetFX(current_stream, BASS_FX_BFX_PEAKEQ, 0);
+	fx = true;
 }
 
 //
@@ -288,45 +288,29 @@ PF void ig_enable_equalizer()
 //
 PF void ig_disable_equalizer()
 {
-	BASS_FXReset(fx);
+	fx = false;
 }
 
 //
 // Sets gain value on the specified equalizer band
 //
 // band: 0..n
-// quality: 0..2
 // freq: 1...n
 // gain 0..n
 //
-PF void ig_set_equalizer(int band, int quality, float freq, float gain)
+int equalizer[18];
+PF void ig_set_equalizer(int band, float freq, float gain)
 {
-	float bandwidth = 0;
-	float qf = 0;
+	BASS_BFX_PEAKEQ param;
+	param.lBand = band;
+	if (!BASS_FXGetParameters(equalizer[band], &param)) {
+		param.fBandwidth = 2.5;
+		param.fCenter = freq;
+		param.fQ = 0;
 
-	switch (quality)
-	{
-		case 0:
-			bandwidth = 2.5;
-			qf = 0.25;
-			break;
-		case 1:
-			bandwidth = 5;
-			qf = 0.5;
-			break;
-		case 2:
-			bandwidth = 10;
-			qf = 1;
-			break;
+		equalizer[band] = BASS_ChannelSetFX(current_stream, BASS_FX_BFX_PEAKEQ, 0);
 	}
 
-	BASS_BFX_PEAKEQ param;
-	param.fBandwidth = bandwidth;
-	param.fQ = qf;
-	param.fCenter = freq;
 	param.fGain = gain;
-	param.lBand = band;
-	param.lChannel = BASS_BFX_CHANALL;
-
-	BASS_FXSetParameters(fx, &param);
+	BASS_FXSetParameters(equalizer[band], &param);
 }
