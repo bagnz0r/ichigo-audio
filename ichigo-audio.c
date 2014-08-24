@@ -201,7 +201,14 @@ PF void ig_set_pos(double position)
 //
 PF float ig_get_volume()
 {
-	return BASS_GetVolume();
+	if (current_stream == -1)
+		return 0;
+
+	float volume = 0;
+	if (!BASS_ChannelGetAttribute(current_stream, BASS_ATTRIB_VOL, &volume))
+		return 0;
+	
+	return volume;
 }
 
 //
@@ -209,7 +216,10 @@ PF float ig_get_volume()
 //
 PF void ig_set_volume(float volume)
 {
-	BASS_SetVolume(volume);
+	if (current_stream == -1)
+		return;
+
+	BASS_ChannelSetAttribute(current_stream, BASS_ATTRIB_VOL, volume);
 }
 
 //
