@@ -12,6 +12,12 @@
 #include <bass_fx.h>
 #include <tags.h>
 
+#ifdef _WIN32
+#define PF __declspec(dllexport)
+#else
+#define PF __attribute__((visibility("default")))
+#endif
+
 int fx = 0;
 int current_device = 0;
 int current_stream = -1;
@@ -19,7 +25,11 @@ int current_stream = -1;
 bool end_of_stream = true;
 bool paused = true;
 
+#ifdef _WIN32
+void __stdcall sync_end(HSYNC handle, DWORD channel, DWORD data, void *user)
+#else
 void sync_end(HSYNC handle, DWORD channel, DWORD data, void *user)
+#endif
 {
 	BASS_ChannelStop(current_stream);
 	BASS_StreamFree(current_stream);
@@ -33,12 +43,7 @@ void sync_end(HSYNC handle, DWORD channel, DWORD data, void *user)
 //
 // Initialize the Ichigo Audio library
 //
-#ifdef _WIN32
-__declspec(dllexport)
-#else
-__attribute__((visibility("default")))
-#endif
-bool ig_initialize(int device, int freq)
+PF bool ig_initialize(int device, int freq)
 {
 	if (!BASS_Init(device, freq, BASS_DEVICE_FREQ, 0, NULL))
 	{
@@ -77,11 +82,9 @@ bool ig_initialize(int device, int freq)
 // Create audio stream from file
 //
 #ifdef _WIN32
-__declspec(dllexport)
-int ig_create_stream(wchar_t * file_name)
+PF int ig_create_stream(wchar_t * file_name)
 #else
-__attribute__((visibility("default")))
-int ig_create_stream(char * file_name)
+PF int ig_create_stream(char * file_name)
 #endif
 {
 	if (current_stream != -1)
@@ -103,12 +106,7 @@ int ig_create_stream(char * file_name)
 //
 // Create audio stream from URL
 //
-#ifdef _WIN32
-__declspec(dllexport)
-#else
-__attribute__((visibility("default")))
-#endif
-void ig_create_stream_from_url(char * url)
+PF void ig_create_stream_from_url(char * url)
 {
 	if (current_stream != -1)
 	{
@@ -124,12 +122,7 @@ void ig_create_stream_from_url(char * url)
 //
 // Play the current stream
 //
-#ifdef _WIN32
-__declspec(dllexport)
-#else
-__attribute__((visibility("default")))
-#endif
-void ig_play()
+PF void ig_play()
 {
 	if (current_stream == -1)
 		return;
@@ -144,12 +137,7 @@ void ig_play()
 //
 // Pause the current stream
 //
-#ifdef _WIN32
-__declspec(dllexport)
-#else
-__attribute__((visibility("default")))
-#endif
-void ig_pause()
+PF void ig_pause()
 {
 	if (current_stream == -1)
 		return;
@@ -162,12 +150,7 @@ void ig_pause()
 //
 // Stop the current stream
 //
-#ifdef _WIN32
-__declspec(dllexport)
-#else
-__attribute__((visibility("default")))
-#endif
-void ig_stop()
+PF void ig_stop()
 {
 	if (current_stream == -1)
 		return;
@@ -183,12 +166,7 @@ void ig_stop()
 //
 // Get current track position
 //
-#ifdef _WIN32
-__declspec(dllexport)
-#else
-__attribute__((visibility("default")))
-#endif
-double ig_get_pos()
+PF double ig_get_pos()
 {
 	if (current_stream == -1)
 		return -1;
@@ -199,12 +177,7 @@ double ig_get_pos()
 //
 // Get track length
 //
-#ifdef _WIN32
-__declspec(dllexport)
-#else
-__attribute__((visibility("default")))
-#endif
-double ig_get_len()
+PF double ig_get_len()
 {
 	if (current_stream == -1)
 		return -1;
@@ -215,12 +188,7 @@ double ig_get_len()
 //
 // Set track position
 //
-#ifdef _WIN32
-__declspec(dllexport)
-#else
-__attribute__((visibility("default")))
-#endif
-void ig_set_pos(double position)
+PF void ig_set_pos(double position)
 {
 	if (current_stream == -1)
 		return;
@@ -231,12 +199,7 @@ void ig_set_pos(double position)
 //
 // Get current volume
 //
-#ifdef _WIN32
-__declspec(dllexport)
-#else
-__attribute__((visibility("default")))
-#endif
-float ig_get_volume()
+PF float ig_get_volume()
 {
 	return BASS_GetVolume();
 }
@@ -244,10 +207,7 @@ float ig_get_volume()
 //
 // Set volume
 //
-#ifdef _WIN32
-__declspec(dllexport)
-#endif
-void ig_set_volume(float volume)
+PF void ig_set_volume(float volume)
 {
 	BASS_SetVolume(volume);
 }
@@ -255,12 +215,7 @@ void ig_set_volume(float volume)
 //
 // Determines whether the stream is active/has ended or not
 //
-#ifdef _WIN32
-__declspec(dllexport)
-#else
-__attribute__((visibility("default")))
-#endif
-bool ig_is_stream_active()
+PF bool ig_is_stream_active()
 {
 	return !end_of_stream;
 }
@@ -268,12 +223,7 @@ bool ig_is_stream_active()
 //
 // Determines whether the stream has paused or not
 //
-#ifdef _WIN32
-__declspec(dllexport)
-#else
-__attribute__((visibility("default")))
-#endif
-bool ig_is_paused()
+PF bool ig_is_paused()
 {
 	if (current_stream == -1)
 		return false;
@@ -287,12 +237,7 @@ bool ig_is_paused()
 //
 // For more information on expression format, please see tags-readme.txt in dependencies/{OS}/tags
 //
-#ifdef _WIN32
-__declspec(dllexport)
-#else
-__attribute__((visibility("default")))
-#endif
-char * ig_read_tag_from_current_stream(char * tag_format)
+PF char * ig_read_tag_from_current_stream(char * tag_format)
 {
 	return TAGS_Read(current_stream, tag_format);
 }
@@ -304,11 +249,9 @@ char * ig_read_tag_from_current_stream(char * tag_format)
 // For more information on expression format, please see tags-readme.txt in dependencies/{OS}/tags
 //
 #ifdef _WIN32
-__declspec(dllexport)
-char * ig_read_tag_from_file(wchar_t * file_name, char * tag_format)
+PF char * ig_read_tag_from_file(wchar_t * file_name, char * tag_format)
 #else
-__attribute__((visibility("default")))
-char * ig_read_tag_from_file(char * file_name, char * tag_format)
+PF char * ig_read_tag_from_file(char * file_name, char * tag_format)
 #endif
 {
 #ifdef _WIN32
@@ -317,7 +260,6 @@ char * ig_read_tag_from_file(char * file_name, char * tag_format)
 	int stream = BASS_StreamCreateFile(false, file_name, 0, 0, BASS_SAMPLE_FLOAT);
 #endif
 	char * tag = TAGS_Read(stream, tag_format);
-
 	BASS_StreamFree(stream);
 
 	return tag;
@@ -326,12 +268,7 @@ char * ig_read_tag_from_file(char * file_name, char * tag_format)
 //
 // Enables the equalizer
 //
-#ifdef _WIN32
-__declspec(dllexport)
-#else
-__attribute__((visibility("default")))
-#endif
-void ig_enable_equalizer()
+PF void ig_enable_equalizer()
 {
 	fx = BASS_ChannelSetFX(current_stream, BASS_FX_BFX_PEAKEQ, 0);
 }
@@ -339,12 +276,7 @@ void ig_enable_equalizer()
 //
 // Disables the equalizer
 //
-#ifdef _WIN32
-__declspec(dllexport)
-#else
-__attribute__((visibility("default")))
-#endif
-void ig_disable_equalizer()
+PF void ig_disable_equalizer()
 {
 	BASS_FXReset(fx);
 }
@@ -357,12 +289,7 @@ void ig_disable_equalizer()
 // freq: 1...n
 // gain 0..n
 //
-#ifdef _WIN32
-__declspec(dllexport)
-#else
-__attribute__((visibility("default")))
-#endif
-void ig_set_equalizer(int band, int quality, float freq, float gain)
+PF void ig_set_equalizer(int band, int quality, float freq, float gain)
 {
 	float bandwidth = 0;
 	float qf = 0;
