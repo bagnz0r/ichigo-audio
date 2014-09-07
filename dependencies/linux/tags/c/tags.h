@@ -25,13 +25,13 @@ extern "C" {
 #define TAGS_VERSION 17
 
 // returns description of the last error.
-const char*  _stdcall TAGS_GetLastErrorDesc();
+__attribute__((visibility("default"))) const char* TAGS_GetLastErrorDesc();
 
 // main purpose of this library
-const char*  _stdcall TAGS_Read( DWORD dwHandle, const char* fmt );
+__attribute__((visibility("default"))) const char*  TAGS_Read( DWORD dwHandle, const char* fmt );
 
 // retrieves the current version
-DWORD _stdcall TAGS_GetVersion();
+__attribute__((visibility("default"))) DWORD TAGS_GetVersion();
 
 #ifdef __cplusplus
 }

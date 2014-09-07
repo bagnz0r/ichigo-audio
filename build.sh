@@ -39,8 +39,8 @@ if [ $1 == "linux" ]; then
 	cp -v ichigo-audio.c ichigo-audio.build.c
 fi
 
-gcc -x c -c ichigo-audio.build.c -Idependencies/$1/bass -Idependencies/$1/bassflac -Idependencies/$1/bass_fx -Idependencies/$1/tags/c $headers -m32 -o ichigo-audio.o
-gcc -shared -Wl -m32 -Ldependencies/$1/bass -Ldependencies/$1/bassflac -Ldependencies/$1/bass_fx -Ldependencies/$1/basswv -Ldependencies/$1/bass_ape -Ldependencies/$1/bass_mpc -Ldependencies/$1/tags $libs -lbass -lbassflac -lbass_fx -lbasswv -lbass_ape -lbass_mpc -ltags -o ichigo-audio.$ext ichigo-audio.o
+gcc -fPIC -x c -c ichigo-audio.build.c -Idependencies/$1/bass -Idependencies/$1/bassflac -Idependencies/$1/bass_fx -Idependencies/$1/tags/c $headers -o ichigo-audio.o
+gcc -shared -Ldependencies/$1/bass -Ldependencies/$1/bassflac -Ldependencies/$1/bass_fx -Ldependencies/$1/basswv -Ldependencies/$1/bass_ape -Ldependencies/$1/bass_mpc -Ldependencies/$1/tags $libs -lbass -lbassflac -lbass_fx -lbasswv -lbass_ape -lbass_mpc -ltags -o ichigo-audio.$ext ichigo-audio.o
 rm ichigo-audio.build.c
 rm ichigo-audio.o
 
