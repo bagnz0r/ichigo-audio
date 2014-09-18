@@ -34,7 +34,7 @@ bool end_of_stream = true;
 bool paused = true;
 
 // Audio volume.
-float volume = 1;
+float audio_volume = 1;
 
 #ifdef _WIN32
 void __stdcall sync_end(HSYNC handle, DWORD channel, DWORD data, void *user)
