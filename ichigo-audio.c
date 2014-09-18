@@ -18,12 +18,23 @@
 #define PF __attribute__((visibility("default")))
 #endif
 
+// Effects enabled?
 bool fx = false;
+
+// Currently selected audio device.
 int current_device = 0;
+
+// Curent stream handle.
 int current_stream = -1;
 
+// Has the stream ended?
 bool end_of_stream = true;
+
+// Is the stream paused?
 bool paused = true;
+
+// Audio volume.
+float volume = 1;
 
 #ifdef _WIN32
 void __stdcall sync_end(HSYNC handle, DWORD channel, DWORD data, void *user)
@@ -100,6 +111,9 @@ PF int ig_create_stream(char * file_name)
 #else
     current_stream = BASS_StreamCreateFile(false, file_name, 0, 0, BASS_SAMPLE_FLOAT);
 #endif
+    
+    ig_set_volume(audio_volume);
+    
 	return BASS_ErrorGetCode();
 }
 
@@ -117,6 +131,8 @@ PF void ig_create_stream_from_url(char * url)
 	}
 
 	current_stream = BASS_StreamCreateURL(url, 0, BASS_SAMPLE_FLOAT | BASS_STREAM_RESTRATE, NULL, NULL);
+    
+    ig_set_volume(audio_volume);
 }
 
 //
@@ -218,6 +234,8 @@ PF void ig_set_volume(float volume)
 {
 	if (current_stream == -1)
 		return;
+    
+    audio_volume = volume;
 
 	BASS_ChannelSetAttribute(current_stream, BASS_ATTRIB_VOL, volume);
 }
