@@ -330,6 +330,58 @@ PF char * ig_read_tag_from_file(char * file_name, char * tag_format)
 }
 
 //
+// Grabs current stream's FFT data (up to 1024 values, or 2048 samples).
+//
+// value_count: 128 || 256 || 512 || 1024
+//
+PF float[] ig_get_fft(int value_count)
+{
+	int flag;
+	float fft[value_count];
+
+	switch (value_count)
+	{
+		case 128:
+			flag = BASS_DATA_FFT256;
+			break;
+		case 256:
+			flag = BASS_DATA_FFT512;
+			break;
+		case 512:
+			flag = BASS_DATA_FFT1024;
+			break;
+		case 1024:
+			flag = BASS_DATA_FFT2048;
+			break;
+	}
+
+	BASS_ChannelGetData(current_stream, fft, flag);
+
+	return fft;
+}
+
+//
+// Grabs current stream's FFT data (up to 1024 values, or 2048 samples)
+// and calculates an average.
+//
+// value_count: 128 || 256 || 512 || 1024
+//
+PF float ig_get_fft_avg(int value_count)
+{
+	float fft[value_count] = ig_get_fft(value_count);
+	float avg = 0;
+
+	for (int i = 0; i < sizeof(fft); i++)
+	{
+		avg += fft[i];
+	}
+
+	avg = avg / sizeof(fft);
+
+	return avg;
+}
+
+//
 // Enables the equalizer
 //
 PF void ig_enable_equalizer()
