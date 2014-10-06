@@ -18,12 +18,29 @@
 #define PF __attribute__((visibility("default")))
 #endif
 
+// Effects enabled?
 bool fx = false;
+
+// Currently selected audio device.
 int current_device = 0;
+
+// Curent stream handle.
 int current_stream = -1;
 
+// Has the stream ended?
 bool end_of_stream = true;
+
+// Is the stream paused?
 bool paused = true;
+
+// Audio volume.
+float audio_volume = 1;
+
+// Equalizer bands.
+int equalizer[18];
+
+// Equalizer band parameters.
+BASS_BFX_PEAKEQ equalizer_params[18];
 
 #ifdef _WIN32
 void __stdcall sync_end(HSYNC handle, DWORD channel, DWORD data, void *user)
@@ -79,6 +96,34 @@ PF bool ig_initialize(int device, int freq)
 }
 
 //
+// Returns count of available devices
+//
+PF int ig_get_device_count()
+{
+	int count = 0;
+	BASS_DEVICEINFO info;
+
+	for (int i = 0; BASS_GetDeviceInfo(i, &info); i++)
+	{
+		if (info.flags & BASS_DEVICE_ENABLED)
+			count++;
+	}
+
+	return count;
+}
+
+//
+// Returns selected device name
+//
+PF char * ig_get_device_name(int device)
+{
+	BASS_DEVICEINFO info;
+	BASS_GetDeviceInfo(device, &info);
+
+	return device.name;
+}
+
+//
 // Create audio stream from file
 //
 #ifdef _WIN32
@@ -100,6 +145,10 @@ PF int ig_create_stream(char * file_name)
 #else
     current_stream = BASS_StreamCreateFile(false, file_name, 0, 0, BASS_SAMPLE_FLOAT);
 #endif
+    
+    ig_set_volume(audio_volume);
+    restore_equalizer();
+    
 	return BASS_ErrorGetCode();
 }
 
@@ -117,6 +166,9 @@ PF void ig_create_stream_from_url(char * url)
 	}
 
 	current_stream = BASS_StreamCreateURL(url, 0, BASS_SAMPLE_FLOAT | BASS_STREAM_RESTRATE, NULL, NULL);
+    
+    ig_set_volume(audio_volume);
+    restore_equalizer();
 }
 
 //
@@ -218,6 +270,8 @@ PF void ig_set_volume(float volume)
 {
 	if (current_stream == -1)
 		return;
+    
+    audio_volume = volume;
 
 	BASS_ChannelSetAttribute(current_stream, BASS_ATTRIB_VOL, volume);
 }
@@ -288,6 +342,12 @@ PF void ig_enable_equalizer()
 //
 PF void ig_disable_equalizer()
 {
+	for (int i = 0; i < sizeof(equalizer); i++)
+	{
+		if (equalizer[i])
+			BASS_ChannelRemoveFX(current_stream, equalizer[i]);
+	}
+
 	fx = false;
 }
 
@@ -298,13 +358,16 @@ PF void ig_disable_equalizer()
 // freq: 1...n
 // gain 0..n
 //
-int equalizer[18];
 PF void ig_set_equalizer(int band, float freq, float gain)
 {
+	if (!fx)
+		return;
+
 	BASS_BFX_PEAKEQ param;
 	param.lBand = band;
-	if (!BASS_FXGetParameters(equalizer[band], &param)) {
-		param.fBandwidth = 2.5;
+	if (!BASS_FXGetParameters(equalizer[band], &param))
+	{
+		param.fBandwidth = 10;
 		param.fCenter = freq;
 		param.fQ = 0;
 
@@ -313,4 +376,24 @@ PF void ig_set_equalizer(int band, float freq, float gain)
 
 	param.fGain = gain;
 	BASS_FXSetParameters(equalizer[band], &param);
+
+	equalizer_params[band] = param;
+}
+
+//
+// Restores equalizer settings when stream is changed
+//
+void restore_equalizer()
+{
+	if (!fx)
+		return;
+
+	for (int i = 0; i < sizeof(equalizer_params); i++)
+	{
+		if (equalizer_params[i])
+		{
+			equalizer[i] = BASS_ChannelSetFX(current_stream, BASS_FX_BFX_PEAKEQ, 0);
+			BASS_FXSetParameters(equalizer[band], &equalizer_params[i]);
+		}
+	}
 }
