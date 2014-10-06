@@ -105,7 +105,7 @@ PF int ig_get_device_count()
 
 	for (int i = 0; BASS_GetDeviceInfo(i, &info); i++)
 	{
-		if (info.flags & BASS_DEVICE_ENABLED)
+		if (info.flags)
 			count++;
 	}
 
