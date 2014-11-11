@@ -419,7 +419,7 @@ PF void ig_set_equalizer(int band, float freq, float gain)
 	param.lBand = band;
 	if (!BASS_FXGetParameters(equalizer[band], &param))
 	{
-		param.fBandwidth = 10;
+		param.fBandwidth = 16;
 		param.fCenter = freq;
 		param.fQ = 0;
 
