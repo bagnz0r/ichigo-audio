@@ -120,7 +120,7 @@ PF char * ig_get_device_name(int device)
 	BASS_DEVICEINFO info;
 	BASS_GetDeviceInfo(device, &info);
 
-	return device.name;
+	return info.name;
 }
 
 //
@@ -334,7 +334,7 @@ PF char * ig_read_tag_from_file(char * file_name, char * tag_format)
 //
 // value_count: 128 || 256 || 512 || 1024
 //
-PF float[] ig_get_fft(int value_count)
+PF float * ig_get_fft(int value_count)
 {
 	int flag;
 	float fft[value_count];
@@ -368,7 +368,7 @@ PF float[] ig_get_fft(int value_count)
 //
 PF float ig_get_fft_avg(int value_count)
 {
-	float fft[value_count] = ig_get_fft(value_count);
+	float * fft = ig_get_fft(value_count);
 	float avg = 0;
 
 	for (int i = 0; i < sizeof(fft); i++)
@@ -442,10 +442,7 @@ void restore_equalizer()
 
 	for (int i = 0; i < sizeof(equalizer_params); i++)
 	{
-		if (equalizer_params[i])
-		{
-			equalizer[i] = BASS_ChannelSetFX(current_stream, BASS_FX_BFX_PEAKEQ, 0);
-			BASS_FXSetParameters(equalizer[band], &equalizer_params[i]);
-		}
+		equalizer[i] = BASS_ChannelSetFX(current_stream, BASS_FX_BFX_PEAKEQ, 0);
+		BASS_FXSetParameters(equalizer[i], &equalizer_params[i]);
 	}
 }
