@@ -95,6 +95,102 @@ PF bool ig_initialize(int device, int freq)
 	return true;
 }
 
+
+//
+// Enables the equalizer
+//
+PF void ig_enable_equalizer()
+{
+	fx = true;
+}
+
+//
+// Disables the equalizer
+//
+PF void ig_disable_equalizer()
+{
+	for (int i = 0; i < sizeof(equalizer); i++)
+	{
+		if (equalizer[i])
+			BASS_ChannelRemoveFX(current_stream, equalizer[i]);
+	}
+
+	fx = false;
+}
+
+//
+// Sets gain value on the specified equalizer band
+//
+// band: 0..n
+// freq: 1...n
+// gain 0..n
+//
+PF void ig_set_equalizer(int band, float freq, float gain)
+{
+	if (!fx)
+		return;
+
+	BASS_BFX_PEAKEQ param;
+	param.lBand = band;
+	if (!BASS_FXGetParameters(equalizer[band], &param))
+	{
+		param.fBandwidth = 16;
+		param.fCenter = freq;
+		param.fQ = 0;
+
+		equalizer[band] = BASS_ChannelSetFX(current_stream, BASS_FX_BFX_PEAKEQ, 0);
+	}
+
+	param.fGain = gain;
+	BASS_FXSetParameters(equalizer[band], &param);
+
+	equalizer_params[band] = param;
+}
+
+//
+// Restores equalizer settings when stream is changed
+//
+void restore_equalizer()
+{
+	if (!fx)
+		return;
+
+	for (int i = 0; i < sizeof(equalizer_params); i++)
+	{
+		equalizer[i] = BASS_ChannelSetFX(current_stream, BASS_FX_BFX_PEAKEQ, 0);
+		BASS_FXSetParameters(equalizer[i], &equalizer_params[i]);
+	}
+}
+
+
+//
+// Get current volume
+//
+PF float ig_get_volume()
+{
+	if (current_stream == -1)
+		return 0;
+
+	float volume = 0;
+	if (!BASS_ChannelGetAttribute(current_stream, BASS_ATTRIB_VOL, &volume))
+		return 0;
+
+	return volume;
+}
+
+//
+// Set volume
+//
+PF void ig_set_volume(float volume)
+{
+	if (current_stream == -1)
+		return;
+
+	audio_volume = volume;
+
+	BASS_ChannelSetAttribute(current_stream, BASS_ATTRIB_VOL, volume);
+}
+
 //
 // Returns count of available devices
 //
@@ -249,34 +345,6 @@ PF void ig_set_pos(double position)
 }
 
 //
-// Get current volume
-//
-PF float ig_get_volume()
-{
-	if (current_stream == -1)
-		return 0;
-
-	float volume = 0;
-	if (!BASS_ChannelGetAttribute(current_stream, BASS_ATTRIB_VOL, &volume))
-		return 0;
-	
-	return volume;
-}
-
-//
-// Set volume
-//
-PF void ig_set_volume(float volume)
-{
-	if (current_stream == -1)
-		return;
-    
-    audio_volume = volume;
-
-	BASS_ChannelSetAttribute(current_stream, BASS_ATTRIB_VOL, volume);
-}
-
-//
 // Determines whether the stream is active/has ended or not
 //
 PF bool ig_is_stream_active()
@@ -330,45 +398,23 @@ PF char * ig_read_tag_from_file(char * file_name, char * tag_format)
 }
 
 //
-// Grabs current stream's FFT data (up to 1024 values, or 2048 samples).
+// Grabs current stream's FFT data (256 samples).
 //
-// value_count: 128 || 256 || 512 || 1024
-//
-PF float * ig_get_fft(int value_count)
+PF float * ig_get_fft()
 {
-	int flag;
-	float fft[value_count];
-
-	switch (value_count)
-	{
-		case 128:
-			flag = BASS_DATA_FFT256;
-			break;
-		case 256:
-			flag = BASS_DATA_FFT512;
-			break;
-		case 512:
-			flag = BASS_DATA_FFT1024;
-			break;
-		case 1024:
-			flag = BASS_DATA_FFT2048;
-			break;
-	}
-
-	BASS_ChannelGetData(current_stream, fft, flag);
+	float fft[128];
+	BASS_ChannelGetData(current_stream, fft, BASS_DATA_FFT256);
 
 	return fft;
 }
 
 //
-// Grabs current stream's FFT data (up to 1024 values, or 2048 samples)
+// Grabs current stream's FFT data (256 samples)
 // and calculates an average.
 //
-// value_count: 128 || 256 || 512 || 1024
-//
-PF float ig_get_fft_avg(int value_count)
+PF float ig_get_fft_avg()
 {
-	float * fft = ig_get_fft(value_count);
+	float * fft = ig_get_fft();
 	float avg = 0;
 
 	for (int i = 0; i < sizeof(fft); i++)
@@ -379,70 +425,4 @@ PF float ig_get_fft_avg(int value_count)
 	avg = avg / sizeof(fft);
 
 	return avg;
-}
-
-//
-// Enables the equalizer
-//
-PF void ig_enable_equalizer()
-{
-	fx = true;
-}
-
-//
-// Disables the equalizer
-//
-PF void ig_disable_equalizer()
-{
-	for (int i = 0; i < sizeof(equalizer); i++)
-	{
-		if (equalizer[i])
-			BASS_ChannelRemoveFX(current_stream, equalizer[i]);
-	}
-
-	fx = false;
-}
-
-//
-// Sets gain value on the specified equalizer band
-//
-// band: 0..n
-// freq: 1...n
-// gain 0..n
-//
-PF void ig_set_equalizer(int band, float freq, float gain)
-{
-	if (!fx)
-		return;
-
-	BASS_BFX_PEAKEQ param;
-	param.lBand = band;
-	if (!BASS_FXGetParameters(equalizer[band], &param))
-	{
-		param.fBandwidth = 16;
-		param.fCenter = freq;
-		param.fQ = 0;
-
-		equalizer[band] = BASS_ChannelSetFX(current_stream, BASS_FX_BFX_PEAKEQ, 0);
-	}
-
-	param.fGain = gain;
-	BASS_FXSetParameters(equalizer[band], &param);
-
-	equalizer_params[band] = param;
-}
-
-//
-// Restores equalizer settings when stream is changed
-//
-void restore_equalizer()
-{
-	if (!fx)
-		return;
-
-	for (int i = 0; i < sizeof(equalizer_params); i++)
-	{
-		equalizer[i] = BASS_ChannelSetFX(current_stream, BASS_FX_BFX_PEAKEQ, 0);
-		BASS_FXSetParameters(equalizer[i], &equalizer_params[i]);
-	}
 }
